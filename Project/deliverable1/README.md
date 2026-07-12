@@ -16,24 +16,37 @@ supports all four project deliverables on the same data:
 - **Association rule mining (Deliverable 3):** find frequent service/contract combinations
   associated with churn.
 
-I was also personally interested in this dataset as I work as a software engineern in the 
-wireless & semiconductor industry and am curious what the customer profile looks like for 
-such industries. 
+I was also personally interested in this dataset as I work as a software engineer in the
+wireless & semiconductor industry and am curious what the customer profile looks like for
+such industries.
 
 ## Key Insights from Analysis
 
-- **Churn is moderately imbalanced:** ~26.5% of customers churned vs. 73.5% retained. Future
-  classification work will need F1/ROC-AUC rather than raw accuracy.
+- **Churn is moderately imbalanced:** 26.5% of customers churned vs. 73.5% retained. Future
+  classification work will need F1/ROC-AUC rather than raw accuracy, since a model could get ~74%
+  accuracy just by predicting "No churn" for everyone.
 - **Tenure is bimodal:** lots of brand-new customers and lots of long-tenured (70+ month)
-  customers, fewer in between.
-- **`TotalCharges` is highly correlated with `tenure` (r ~ 0.83)**, since it's effectively a
-  function of tenure and monthly charges. `MonthlyCharges` is the more independent, more useful
-  regression target for Deliverable 2.
-- **Churn is concentrated among month-to-month contracts, fiber optic internet customers, and
-  electronic check payers.** These look like strong predictors for classification and good
-  candidates for association rule mining.
+  customers, fewer in between. This suggests two distinct customer populations rather than one
+  smooth distribution - relevant for the Deliverable 3 clustering task.
+- **`TotalCharges` is highly correlated with `tenure` (r = 0.83)** and moderately correlated with
+  `MonthlyCharges` (r = 0.65), since it's arithmetically close to `tenure x MonthlyCharges`.
+  `tenure` and `MonthlyCharges` themselves are only weakly correlated (r = 0.25), meaning they
+  carry mostly independent information. Because of this, `MonthlyCharges` is the more independent,
+  more useful regression target for Deliverable 2 - using `TotalCharges` instead would let the
+  model "cheat" by mostly just learning tenure.
+- **Contract type is the strongest single driver of churn found in this EDA:** month-to-month
+  customers churn at **42.7%**, vs. 11.3% for one-year contracts and just 2.8% for two-year
+  contracts - a 15x gap between the highest- and lowest-risk contract types.
+- **Payment method and internet service show similarly large gaps:** electronic check payers
+  churn at **45.3%** vs. 15-19% for the other three payment methods; fiber optic customers churn
+  at **41.9%** vs. 19.0% for DSL and 7.4% for customers with no internet service at all.
+- **These three categorical fields (`Contract`, `PaymentMethod`, `InternetService`) look like the
+  strongest predictors for the Deliverable 3 classification model**, and they're the natural
+  starting point for Deliverable 3's association rule mining, since they show the largest churn-rate
+  swings of any features examined.
 - **No meaningful outliers** were found in `tenure`, `MonthlyCharges`, or `TotalCharges` via
-  boxplot/IQR inspection.
+  boxplot/IQR inspection - the high end of each distribution belongs to genuinely long-tenured,
+  high-paying customers rather than data errors, so no trimming was needed.
 
 ## Data Cleaning Steps
 
@@ -58,8 +71,22 @@ such industries.
 Performed with Seaborn/Matplotlib: churn class distribution, histograms of the three numeric
 features, boxplots for outlier detection, churn rate by contract/internet service/payment method,
 a correlation heatmap of numeric features, and a tenure-vs-monthly-charges scatter plot colored by
-churn. See `Deliverable1.ipynb` for the full code, plots, and written interpretation under each
-visualization.
+churn. The findings from each of these are the "Key Insights from Analysis" listed above; see
+`Deliverable1.ipynb` for the full code, plots, and written interpretation under each visualization.
+
+**How these EDA insights guide future modeling steps:**
+- **Deliverable 2 (Regression):** predict `MonthlyCharges` rather than `TotalCharges`, since
+  `TotalCharges` is mostly explained by `tenure` alone (r = 0.83) and would make for a trivial,
+  uninteresting regression problem.
+- **Deliverable 3 (Classification):** expect `Contract`, `PaymentMethod`, and `InternetService` to
+  be top features for predicting `Churn`; evaluate with F1/ROC-AUC because of the 26.5/73.5 class
+  split.
+- **Deliverable 3 (Clustering):** the bimodal `tenure` distribution suggests at least two natural
+  customer segments (new vs. long-tenured) as a sanity check for however many clusters a model
+  finds.
+- **Deliverable 3 (Association Rule Mining):** the categorical fields with the largest churn-rate
+  swings (`Contract`, `PaymentMethod`, `InternetService`) are the most promising starting point for
+  mining rules that co-occur with `Churn = Yes`.
 
 ## Challenges Encountered
 
